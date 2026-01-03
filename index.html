@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop – DEINE BRAND</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container topbar">
+    Seriöser Demo-Shop: Warenkorb, Varianten, Gutscheine. Zahlung später über PayPal/Klarna anschließbar.
+  </div>
+
+  <header class="container">
+    <div class="brand">
+      <h1 id="brandName">DEINE BRAND</h1>
+      <span class="badge">Store</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Shop</a>
+
+      <!-- JS zeigt entweder Login ODER Logout -->
+      <a href="login.html" id="loginLink">Login</a>
+      <a href="#" id="logoutLink" style="display:none;">Logout</a>
+
+      <a href="cart.html">Warenkorb (<span id="cartCount">0</span>)</a>
+    </nav>
+
+    <div class="controls">
+      <input id="search" type="search" placeholder="Produkt suchen…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <select id="category"></select>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="section-title">Produkte</div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer class="container">
+    <div>
+      © <span id="year"></span> <span id="brandFooter">DEINE BRAND</span> •
+      <a href="impressum.html">Impressum</a> •
+      <a href="datenschutz.html">Datenschutz</a> •
+      <a href="cookies.html">Cookies</a> •
+      <a href="agb.html">AGB</a>
+    </div>
+  </footer>
+
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – DEINE BRAND</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container topbar">
+    Login/Registrierung (Demo). Wenn du eingeloggt bist, kannst du dich hier nur abmelden.
+  </div>
+
+  <header class="container">
+    <div class="brand">
+      <h1 id="brandName">DEINE BRAND</h1>
+      <span class="badge">Account</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Shop</a>
+
+      <!-- JS schaltet Login / Logout -->
+      <a href="login.html" id="loginLink">Login</a>
+      <a href="#" id="logoutLink" style="display:none;">Logout</a>
+
+      <a href="cart.html">Warenkorb (<span id="cartCount">0</span>)</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="panel">
+      <h2 style="margin:0 0 8px;">Account</h2>
+      <p class="small" id="userState">Nicht eingeloggt.</p>
+
+      <div class="section-title">Optionen</div>
+      <div class="meta" style="margin-top:0;">
+        <button class="btn-secondary" id="tabLogin" type="button">Anmelden</button>
+        <button class="btn-secondary" id="tabRegister" type="button">Registrieren</button>
+        <button class="btn-secondary" id="tabGuest" type="button">Als Gast</button>
+      </div>
+
+      <p class="small" id="tabHint" style="margin-top:10px;">
+        Melde dich mit deinen Daten an.
+      </p>
+
+      <!-- PANEL: LOGIN -->
+      <div id="panelLogin" style="margin-top:12px;">
+        <div class="section-title">Anmelden</div>
+
+        <label class="small" style="display:block;">E-Mail</label>
+        <input id="loginEmail" type="email" placeholder="name@mail.de" autocomplete="email" />
+
+        <label class="small" style="display:block; margin-top:10px;">Passwort</label>
+        <input id="loginPassword" type="password" placeholder="••••" autocomplete="current-password" />
+
+        <button class="btn" id="loginBtn" type="button">Anmelden</button>
+        <div class="small" id="loginMsg" style="margin-top:8px;"></div>
+
+        <p class="small" style="margin-top:10px;">
+          Noch kein Account? Nutze oben <strong>Registrieren</strong>.
+        </p>
+      </div>
+
+      <!-- PANEL: REGISTER -->
+      <div id="panelRegister" style="margin-top:12px; display:none;">
+        <div class="section-title">Registrieren</div>
+
+        <label class="small" style="display:block;">E-Mail</label>
+        <input id="regEmail" type="email" placeholder="name@mail.de" autocomplete="email" />
+
+        <label class="small" style="display:block; margin-top:10px;">Passwort</label>
+        <input id="regPassword" type="password" placeholder="mind. 4 Zeichen (Demo)" autocomplete="new-password" />
+
+        <label class="small" style="display:block; margin-top:10px;">Passwort wiederholen</label>
+        <input id="regPassword2" type="password" placeholder="Passwort повтор" autocomplete="new-password" />
+
+        <button class="btn" id="registerBtn" type="button">Registrieren</button>
+        <div class="small" id="registerMsg" style="margin-top:8px;"></div>
+
+        <p class="small" style="margin-top:10px;">
+          Schon registriert? Nutze oben <strong>Anmelden</strong>.
+        </p>
+      </div>
+
+      <!-- PANEL: GUEST -->
+      <div id="panelGuest" style="margin-top:12px; display:none;">
+        <div class="section-title">Als Gast fortfahren</div>
+        <p class="small">
+          Du kannst ohne Account einkaufen. Du erhältst ggf. nicht alle Vorteile (z. B. Neukunden-Rabatt).
+        </p>
+
+        <button class="btn" id="guestBtn" type="button">Als Gast fortfahren</button>
+        <div class="small" id="guestMsg" style="margin-top:8px;"></div>
+      </div>
+
+      <!-- LOGOUT BUTTON (wird nur angezeigt, wenn eingeloggt) -->
+      <button class="btn" id="logoutBtn" type="button" style="display:none; margin-top:14px;">
+        Abmelden
+      </button>
+    </div>
+  </main>
+
+  <footer class="container">
+    <div>
+      © <span id="year"></span> <span id="brandFooter">DEINE BRAND</span> •
+      <a href="impressum.html">Impressum</a> •
+      <a href="datenschutz.html">Datenschutz</a> •
+      <a href="cookies.html">Cookies</a> •
+      <a href="agb.html">AGB</a>
+    </div>
+  </footer>
+
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

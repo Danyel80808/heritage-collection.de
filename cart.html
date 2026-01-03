@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout – DEINE BRAND</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="container topbar">
+    Sicherer Checkout (Demo). Zahlungen über PayPal/Klarna später anschließbar.
+  </div>
+
+  <header class="container">
+    <div class="brand">
+      <h1 id="brandName">DEINE BRAND</h1>
+      <span class="badge">Checkout</span>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Shop</a>
+
+      <!-- JS schaltet Login / Logout -->
+      <a href="login.html" id="loginLink">Login</a>
+      <a href="#" id="logoutLink" style="display:none;">Logout</a>
+
+      <a href="cart.html">Warenkorb (<span id="cartCount">0</span>)</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <a class="back" href="index.html">← Weiter einkaufen</a>
+
+    <div class="detail">
+      <!-- LINKER BEREICH -->
+      <div class="panel">
+
+        <!-- WARENKORB -->
+        <h2 style="margin:0 0 10px;">Warenkorb</h2>
+
+        <div id="cartEmpty" class="small" style="display:none;">
+          Dein Warenkorb ist leer.
+        </div>
+
+        <table class="table" id="cartTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Artikel</th>
+              <th>Variante</th>
+              <th class="right">Preis</th>
+              <th class="right">Menge</th>
+              <th class="right">Summe</th>
+            </tr>
+          </thead>
+          <tbody id="cartBody"></tbody>
+        </table>
+
+        <!-- GUTSCHEIN -->
+        <div style="margin-top:16px;">
+          <label class="small">Gutscheincode</label>
+          <input id="couponInput" placeholder="z.B. WELCOME10" />
+          <button class="btn-secondary" id="applyCoupon" type="button">
+            Gutschein anwenden
+          </button>
+          <div id="couponMsg" class="small"></div>
+        </div>
+
+        <!-- ADRESSE -->
+        <div class="section-title" style="margin-top:18px;">Lieferadresse</div>
+
+        <label class="small">Land</label>
+        <select id="country">
+          <option value="DE">Deutschland</option>
+          <option value="AT">Österreich</option>
+          <option value="CH">Schweiz</option>
+        </select>
+
+        <label class="small">PLZ</label>
+        <input id="zip" placeholder="PLZ" />
+
+        <label class="small">Stadt</label>
+        <input id="city" placeholder="Stadt" />
+
+        <label class="small">Straße & Hausnummer</label>
+        <input id="street" placeholder="Straße & Hausnummer" />
+
+        <button class="btn-secondary" id="saveAddress" type="button">
+          Adresse speichern
+        </button>
+        <div id="addrMsg" class="small"></div>
+
+        <!-- ZAHLUNG -->
+        <div class="section-title" style="margin-top:18px;">Zahlungsart</div>
+
+        <label class="small">
+          <input type="radio" name="pay" value="paypal" checked />
+          PayPal
+        </label><br>
+
+        <label class="small">
+          <input type="radio" name="pay" value="klarna" />
+          Klarna
+        </label>
+
+        <button class="btn" id="payBtn" type="button">
+          Zahlung starten (Demo)
+        </button>
+
+        <p id="payMsg" class="small"></p>
+      </div>
+
+      <!-- RECHTER BEREICH -->
+      <div class="panel">
+        <h2 style="margin:0 0 10px;">Zusammenfassung</h2>
+
+        <div class="small">Zwischensumme: <strong id="sub">—</strong></div>
+        <div class="small">Rabatt: <strong id="disc">—</strong></div>
+        <div class="small">Gesamt: <strong id="total">—</strong></div>
+
+        <div class="section-title" style="margin-top:16px;">Vertrauen</div>
+        <div class="meta">
+          <span class="pill">Transparente Lieferzeit</span>
+          <span class="pill">Sichere UX</span>
+          <span class="pill">Keine versteckten Kosten</span>
+        </div>
+
+        <p class="small" style="margin-top:12px;">
+          Hinweis: Dies ist ein Demo-Checkout.  
+          Echte Zahlungen erfolgen später über offizielle PayPal/Klarna-Schnittstellen.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="container">
+    <div>
+      © <span id="year"></span> <span id="brandFooter">DEINE BRAND</span> •
+      <a href="impressum.html">Impressum</a> •
+      <a href="datenschutz.html">Datenschutz</a> •
+      <a href="cookies.html">Cookies</a> •
+      <a href="agb.html">AGB</a>
+    </div>
+  </footer>
+
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
