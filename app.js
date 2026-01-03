@@ -9,7 +9,7 @@ const BRAND = "Heritage Collection";
 const CART_KEY = "shop_cart_v1";
 const COUPON_KEY = "shop_coupon_v1";
 
-// Login (Demo)
+// Login (Demo lokal)
 const USER_KEY_PERSIST = "shop_user_v1_persist";
 const USER_KEY_SESSION = "shop_user_v1_session";
 const USERS_DB_KEY = "shop_users_db_v1";
@@ -18,14 +18,19 @@ const USERS_DB_KEY = "shop_users_db_v1";
 const ADDRESS_KEY_PERSIST = "shop_address_persist_v1";
 const ADDRESS_KEY_SESSION = "shop_address_session_v1";
 
-// Offer popup
-const OFFER_KEY = "shop_offer_seen_v1";
-
 // Cookie consent
 const COOKIE_CONSENT_KEY = "shop_cookie_consent_v1"; // "all" | "necessary"
 
-// Neukunden Popup
-const WELCOME_POP_KEY = "shop_welcome_seen_v1";
+// Neukunden Popup (nur Frage nach Registrierung, KEIN Rabatt verschenken)
+const WELCOME_POP_KEY = "shop_welcome_seen_v2";
+
+/* ---------- CONTACT (für Footer/Seiten) ---------- */
+const CONTACT = {
+  name: "Hasan Yildiz",
+  phone: "015117224716",
+  email: "info@business-base-center.com",
+  location: "90427 Nürnberg"
+};
 
 /* ---------- HELPERS ---------- */
 function qs(id){ return document.getElementById(id); }
@@ -46,6 +51,10 @@ function setBrand() {
   if (year) year.textContent = new Date().getFullYear();
 
   document.title = document.title.replace("DEINE BRAND", BRAND);
+
+  // Inline contact (optional)
+  const ci = qs("contactInline");
+  if (ci) ci.textContent = `${CONTACT.email} • ${CONTACT.phone}`;
 }
 
 /* ---------- TOAST ---------- */
@@ -65,7 +74,6 @@ function toast(text) {
 
 /* ---------- USER (persist/session) ---------- */
 function getUser() {
-  // prefer session if exists
   try {
     const s = sessionStorage.getItem(USER_KEY_SESSION);
     if (s) return JSON.parse(s);
@@ -92,7 +100,7 @@ function setUserPersist(u) {
   sessionStorage.removeItem(USER_KEY_SESSION);
 }
 
-/* ---------- USERS DB (Demo) ---------- */
+/* ---------- USERS DB (Demo lokal) ---------- */
 function getUsersDb() {
   try { return JSON.parse(localStorage.getItem(USERS_DB_KEY) || "[]"); }
   catch { return []; }
@@ -107,17 +115,14 @@ function syncNavAuthState() {
   const loginLink = qs("loginLink");
   const logoutLink = qs("logoutLink");
 
-  // Wenn eingeloggt: nur Logout anzeigen
   if (u) {
     if (loginLink) loginLink.style.display = "none";
     if (logoutLink) logoutLink.style.display = "inline-block";
   } else {
-    // Wenn ausgeloggt: nur Login anzeigen
     if (loginLink) loginLink.style.display = "inline-block";
     if (logoutLink) logoutLink.style.display = "none";
   }
 
-  // Logout klickbar machen, wenn vorhanden
   if (logoutLink && !logoutLink.dataset.bound) {
     logoutLink.dataset.bound = "1";
     logoutLink.addEventListener("click", (e) => {
@@ -125,8 +130,7 @@ function syncNavAuthState() {
       clearUser();
       toast("Abgemeldet");
       syncNavAuthState();
-      // optional: wenn man auf login.html ist, Panels wieder freigeben
-      if (location.pathname.endsWith("login.html")) renderLogin();
+      gateCouponUI();
     });
   }
 }
@@ -134,6 +138,12 @@ function syncNavAuthState() {
 /* ---------- COUPONS ---------- */
 function getCoupon(){ return (localStorage.getItem(COUPON_KEY) || "").trim(); }
 function setCoupon(code){ localStorage.setItem(COUPON_KEY, (code||"").trim().toUpperCase()); }
+
+/* Nur registrierte/angemeldete Nutzer dürfen Coupons nutzen/sehen */
+function userCanUseCoupons() {
+  const u = getUser();
+  return !!u && u.mode === "user";
+}
 
 function computeTotals(cart) {
   let subtotal = 0;
@@ -143,17 +153,22 @@ function computeTotals(cart) {
     subtotal += (Number(p.price)||0) * (Number(it.qty)||0);
   }
 
-  const code = getCoupon().toUpperCase();
-  const c = (window.COUPONS || {})[code];
-
   let discount = 0;
-  if (c) {
-    if (c.type === "percent") discount = subtotal * (Number(c.value)/100);
-    if (c.type === "fixed") discount = Number(c.value)||0;
-    if (discount > subtotal) discount = subtotal;
+  let codeValid = false;
+  let code = "";
+
+  if (userCanUseCoupons()) {
+    code = getCoupon().toUpperCase();
+    const c = (window.COUPONS || {})[code];
+    if (c) {
+      codeValid = true;
+      if (c.type === "percent") discount = subtotal * (Number(c.value)/100);
+      if (c.type === "fixed") discount = Number(c.value)||0;
+      if (discount > subtotal) discount = subtotal;
+    }
   }
 
-  return { subtotal, discount, total: Math.max(0, subtotal-discount), codeValid: !!c, code };
+  return { subtotal, discount, total: Math.max(0, subtotal-discount), codeValid, code };
 }
 
 /* ---------- PRODUCTS ---------- */
@@ -187,6 +202,12 @@ function addToCart({ productId, color, size, qty }) {
 
   saveCart(cart);
   toast("In den Warenkorb gelegt");
+}
+function removeFromCartByIndex(index) {
+  const cart = getCart();
+  if (index < 0 || index >= cart.length) return;
+  cart.splice(index, 1);
+  saveCart(cart);
 }
 
 /* ---------- INDEX ---------- */
@@ -292,6 +313,120 @@ function renderProduct() {
   qs("goCartBtn")?.addEventListener("click", () => (location.href = "cart.html"));
 }
 
+/* ---------- ADDRESS ---------- */
+function getAddress() {
+  try {
+    const s = sessionStorage.getItem(ADDRESS_KEY_SESSION);
+    if (s) return JSON.parse(s);
+  } catch {}
+  try {
+    const p = localStorage.getItem(ADDRESS_KEY_PERSIST);
+    if (p) return JSON.parse(p);
+  } catch {}
+  return null;
+}
+function setAddressSession(addr){
+  sessionStorage.setItem(ADDRESS_KEY_SESSION, JSON.stringify(addr));
+  localStorage.removeItem(ADDRESS_KEY_PERSIST);
+}
+function setAddressPersist(addr){
+  localStorage.setItem(ADDRESS_KEY_PERSIST, JSON.stringify(addr));
+  sessionStorage.removeItem(ADDRESS_KEY_SESSION);
+}
+
+/* client-side Validierung (echt prüfen via API später möglich) */
+function validateAddressFields(addr) {
+  // Street needs number at least once (simple check)
+  const streetOk = /^[^\d]{2,}\s+\d+[a-zA-Z]?$/.test(addr.street);
+
+  // DE: 5 digits, AT: 4 digits, CH: 4 digits
+  let zipOk = true;
+  if (addr.country === "DE") zipOk = /^\d{5}$/.test(addr.zip);
+  if (addr.country === "AT") zipOk = /^\d{4}$/.test(addr.zip);
+  if (addr.country === "CH") zipOk = /^\d{4}$/.test(addr.zip);
+
+  const cityOk = addr.city.length >= 2;
+
+  return { ok: streetOk && zipOk && cityOk, streetOk, zipOk, cityOk };
+}
+
+/* Platzhalter für echte Adressprüfung (API nötig) */
+async function addressExistsWithApi(/* addr */) {
+  // Hier später z.B. fetch(...) zu einem Adressdienst.
+  // Ohne API-Key/Backend nicht zuverlässig möglich.
+  return true;
+}
+
+function renderAddress() {
+  const saveBtn = qs("saveAddress");
+  if (!saveBtn) return;
+
+  const country = qs("country");
+  const zip = qs("zip");
+  const city = qs("city");
+  const street = qs("street");
+  const msg = qs("addrMsg");
+
+  const a = getAddress();
+  if (a) {
+    if (country) country.value = a.country || "DE";
+    if (zip) zip.value = a.zip || "";
+    if (city) city.value = a.city || "";
+    if (street) street.value = a.street || "";
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    const addr = {
+      country: (country?.value || "DE"),
+      zip: (zip?.value || "").trim(),
+      city: (city?.value || "").trim(),
+      street: (street?.value || "").trim()
+    };
+
+    const v = validateAddressFields(addr);
+    if (!v.ok) {
+      msg.textContent =
+        (!v.zipOk ? "Bitte gültige PLZ eingeben. " : "") +
+        (!v.cityOk ? "Bitte gültige Stadt eingeben. " : "") +
+        (!v.streetOk ? "Bitte Straße + Hausnummer (z.B. Musterstraße 12) eingeben." : "");
+      toast("Adresse prüfen");
+      return;
+    }
+
+    const exists = await addressExistsWithApi(addr);
+    if (!exists) {
+      msg.textContent = "Adresse konnte nicht bestätigt werden. Bitte prüfen.";
+      toast("Adresse nicht bestätigt");
+      return;
+    }
+
+    const remember = confirm("Adresse für nächste Einkäufe speichern?");
+    if (remember) setAddressPersist(addr);
+    else setAddressSession(addr);
+
+    msg.textContent = remember ? "Adresse dauerhaft gespeichert." : "Adresse für diesen Besuch gespeichert.";
+    toast("Adresse gespeichert");
+
+    saveBtn.classList.add("success");
+    setTimeout(() => saveBtn.classList.remove("success"), 900);
+  });
+}
+
+/* ---------- COUPON UI GATING ---------- */
+function gateCouponUI() {
+  const couponBox = qs("couponBox");
+  if (!couponBox) return;
+
+  if (userCanUseCoupons()) {
+    couponBox.style.display = "block";
+    const hint = qs("couponHint");
+    if (hint) hint.textContent = "Dein Neukunden-Code wird nach Registrierung automatisch freigeschaltet.";
+  } else {
+    couponBox.style.display = "none";
+    // Coupon intern nicht löschen (optional), aber ohne Login wirkt er nicht
+  }
+}
+
 /* ---------- CART PAGE ---------- */
 function renderCart() {
   const table = qs("cartTable");
@@ -332,6 +467,7 @@ function renderCart() {
         <tr>
           <td><strong>${p.name}</strong><div class="small">${p.category || ""}</div></td>
           <td>${it.color} / ${it.size}</td>
+          <td class="small">${p.shippingTime || "—"}</td>
           <td class="right">${money(unit, p.currency || "EUR")}</td>
           <td class="right">
             <select data-index="${index}" class="qtySelect">
@@ -339,6 +475,9 @@ function renderCart() {
             </select>
           </td>
           <td class="right">${money(line, p.currency || "EUR")}</td>
+          <td class="right">
+            <button class="btn-secondary removeBtn" data-index="${index}" type="button">×</button>
+          </td>
         </tr>
       `;
     }).join("");
@@ -356,15 +495,34 @@ function renderCart() {
       });
     });
 
+    document.querySelectorAll(".removeBtn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const idx = Number(e.currentTarget.dataset.index);
+        removeFromCartByIndex(idx);
+        toast("Artikel entfernt");
+        draw();
+      });
+    });
+
     const t = computeTotals(cart);
     if (subEl) subEl.textContent = money(t.subtotal, "EUR");
     if (discEl) discEl.textContent = t.codeValid ? `- ${money(t.discount, "EUR")} (${t.code})` : money(0, "EUR");
     if (totalEl) totalEl.textContent = money(t.total, "EUR");
   }
 
-  if (couponInput) couponInput.value = getCoupon();
+  gateCouponUI();
+
+  if (couponInput) {
+    couponInput.value = userCanUseCoupons() ? getCoupon() : "";
+  }
 
   qs("applyCoupon")?.addEventListener("click", () => {
+    if (!userCanUseCoupons()) {
+      toast("Bitte zuerst einloggen");
+      location.href = "login.html#register";
+      return;
+    }
+
     const code = (couponInput?.value || "").trim().toUpperCase();
     setCoupon(code);
 
@@ -375,20 +533,29 @@ function renderCart() {
   });
 
   qs("payBtn")?.addEventListener("click", () => {
+    const u = getUser();
+    if (!u || u.mode !== "user") {
+      const payMsg = qs("payMsg");
+      if (payMsg) payMsg.textContent = "Bitte registrieren oder anmelden, um fortzufahren.";
+      toast("Login erforderlich");
+      location.href = "login.html#register";
+      return;
+    }
+
     const cart = getCart();
     if (!cart.length) return;
 
     const t = computeTotals(cart);
     const method = document.querySelector('input[name="pay"]:checked')?.value || "paypal";
     const payMsg = qs("payMsg");
-    if (payMsg) payMsg.textContent = `Demo: Zahlung über ${method.toUpperCase()} würde starten. Gesamt: ${money(t.total, "EUR")}`;
-    toast("Checkout (Demo) gestartet");
+    if (payMsg) payMsg.textContent = `Zahlung wird gestartet: ${method.toUpperCase()} • Gesamt: ${money(t.total, "EUR")}`;
+    toast("Zahlung gestartet");
   });
 
   draw();
 }
 
-/* ---------- LOGIN PAGE LOGIC ---------- */
+/* ---------- LOGIN PAGE (wie vorher, aber: Rabatt erst nach Registrierung) ---------- */
 function renderLogin() {
   const tabLogin = qs("tabLogin");
   if (!tabLogin) return;
@@ -412,7 +579,7 @@ function renderLogin() {
     if (hint) {
       hint.textContent =
         which === "login" ? "Melde dich mit deinen Daten an." :
-        which === "register" ? "Erstelle einen Account (Demo, lokal gespeichert)." :
+        which === "register" ? "Erstelle einen Account." :
         "Als Gast fortfahren, ohne Account.";
     }
   }
@@ -427,7 +594,6 @@ function renderLogin() {
 
     const locked = !!u;
 
-    // Wenn eingeloggt: KEINE Login/Register/Gast Panels zeigen – nur Logout
     if (locked) {
       if (panelLogin) panelLogin.style.display = "none";
       if (panelRegister) panelRegister.style.display = "none";
@@ -442,7 +608,12 @@ function renderLogin() {
       if (tabRegister) tabRegister.disabled = false;
       if (tabGuest) tabGuest.disabled = false;
       if (logoutBtn) logoutBtn.style.display = "none";
-      show("login");
+
+      // Hash-Steuerung
+      const h = (location.hash || "").toLowerCase();
+      if (h.includes("register")) show("register");
+      else if (h.includes("guest")) show("guest");
+      else show("login");
     }
   }
 
@@ -451,6 +622,10 @@ function renderLogin() {
     if (remember) setUserPersist(userObj);
     else setUserSession(userObj);
   }
+
+  tabLogin?.addEventListener("click", () => show("login"));
+  tabRegister?.addEventListener("click", () => show("register"));
+  tabGuest?.addEventListener("click", () => show("guest"));
 
   // Login
   qs("loginBtn")?.addEventListener("click", () => {
@@ -469,7 +644,7 @@ function renderLogin() {
     const db = getUsersDb();
     const found = db.find(x => x.email === e && x.password === p);
     if (!found) {
-      if (msg) msg.textContent = "Falsche Daten (Demo).";
+      if (msg) msg.textContent = "Falsche Daten.";
       toast("Falsche Daten");
       return;
     }
@@ -477,11 +652,13 @@ function renderLogin() {
     askRememberAndStore({ mode:"user", email:e, ts:Date.now() });
     if (msg) msg.textContent = "Anmeldung erfolgreich.";
     toast("Angemeldet");
+
     lockIfLoggedIn();
     syncNavAuthState();
+    gateCouponUI();
   });
 
-  // Register
+  // Register (hier wird der Neukundenrabatt freigeschaltet)
   qs("registerBtn")?.addEventListener("click", () => {
     if (getUser()) return;
 
@@ -491,20 +668,26 @@ function renderLogin() {
     const msg = qs("registerMsg");
 
     if (!e.includes("@")) { if (msg) msg.textContent = "Bitte gültige E-Mail."; toast("E-Mail prüfen"); return; }
-    if (p1.length < 4) { if (msg) msg.textContent = "Passwort zu kurz (Demo)."; toast("Passwort zu kurz"); return; }
+    if (p1.length < 4) { if (msg) msg.textContent = "Passwort zu kurz."; toast("Passwort zu kurz"); return; }
     if (p1 !== p2) { if (msg) msg.textContent = "Passwörter stimmen nicht überein."; toast("Passwörter prüfen"); return; }
 
     const db = getUsersDb();
-    if (db.some(x => x.email === e)) { if (msg) msg.textContent = "E-Mail existiert schon (Demo)."; toast("E-Mail existiert"); return; }
+    if (db.some(x => x.email === e)) { if (msg) msg.textContent = "E-Mail existiert bereits."; toast("E-Mail existiert"); return; }
 
     db.push({ email:e, password:p1 });
     setUsersDb(db);
 
     askRememberAndStore({ mode:"user", email:e, ts:Date.now() });
-    if (msg) msg.textContent = "Registriert & eingeloggt.";
-    toast("Registriert");
+
+    // Neukunden-Code erst JETZT setzen (nach Registrierung)
+    setCoupon("WELCOME10");
+
+    if (msg) msg.textContent = "Registriert & eingeloggt. Neukundenrabatt freigeschaltet.";
+    toast("Registriert + Rabatt aktiv");
+
     lockIfLoggedIn();
     syncNavAuthState();
+    gateCouponUI();
   });
 
   // Guest
@@ -516,6 +699,7 @@ function renderLogin() {
     toast("Als Gast");
     lockIfLoggedIn();
     syncNavAuthState();
+    gateCouponUI();
   });
 
   // Logout
@@ -524,122 +708,20 @@ function renderLogin() {
     toast("Abgemeldet");
     lockIfLoggedIn();
     syncNavAuthState();
+    gateCouponUI();
   });
 
   lockIfLoggedIn();
 }
 
-/* ---------- ADDRESS ---------- */
-function getAddress() {
-  try {
-    const s = sessionStorage.getItem(ADDRESS_KEY_SESSION);
-    if (s) return JSON.parse(s);
-  } catch {}
-  try {
-    const p = localStorage.getItem(ADDRESS_KEY_PERSIST);
-    if (p) return JSON.parse(p);
-  } catch {}
-  return null;
-}
-function setAddressSession(addr){
-  sessionStorage.setItem(ADDRESS_KEY_SESSION, JSON.stringify(addr));
-  localStorage.removeItem(ADDRESS_KEY_PERSIST);
-}
-function setAddressPersist(addr){
-  localStorage.setItem(ADDRESS_KEY_PERSIST, JSON.stringify(addr));
-  sessionStorage.removeItem(ADDRESS_KEY_SESSION);
-}
-
-function renderAddress() {
-  const saveBtn = qs("saveAddress");
-  if (!saveBtn) return;
-
-  const country = qs("country");
-  const zip = qs("zip");
-  const city = qs("city");
-  const street = qs("street");
-  const msg = qs("addrMsg");
-
-  const a = getAddress();
-  if (a) {
-    if (country) country.value = a.country || "DE";
-    if (zip) zip.value = a.zip || "";
-    if (city) city.value = a.city || "";
-    if (street) street.value = a.street || "";
-  }
-
-  saveBtn.addEventListener("click", () => {
-    const addr = {
-      country: (country?.value || "DE"),
-      zip: (zip?.value || "").trim(),
-      city: (city?.value || "").trim(),
-      street: (street?.value || "").trim()
-    };
-
-    if (!addr.zip || !addr.city || !addr.street) {
-      if (msg) msg.textContent = "Bitte PLZ, Stadt und Straße ausfüllen.";
-      toast("Adresse unvollständig");
-      return;
-    }
-
-    const remember = confirm("Adresse für nächste Einkäufe speichern?");
-    if (remember) {
-      setAddressPersist(addr);
-      if (msg) msg.textContent = "Adresse dauerhaft gespeichert.";
-      toast("Adresse gespeichert");
-    } else {
-      setAddressSession(addr);
-      if (msg) msg.textContent = "Adresse nur für diesen Besuch gespeichert.";
-      toast("Adresse für Besuch gespeichert");
-    }
-
-    // anim feedback if btn-secondary success exists in css
-    saveBtn.classList.add("success");
-    setTimeout(() => saveBtn.classList.remove("success"), 900);
-  });
-}
-
-/* ---------- OFFER POPUP (1x/day) ---------- */
-function showOfferPopup() {
-  const grid = qs("grid");
-  if (!grid) return;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const seen = localStorage.getItem(OFFER_KEY);
-  if (seen === today) return;
-
-  const overlay = document.createElement("div");
-  overlay.className = "modalOverlay";
-  overlay.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true">
-      <h3>Heute im Angebot</h3>
-      <p class="small">Spare <strong>10%</strong> mit dem Code <strong>WELCOME10</strong>.</p>
-      <div class="modalActions">
-        <button class="btn" id="offerGo">Jetzt shoppen</button>
-        <button class="btn-secondary" id="offerClose">Schließen</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  function close() {
-    localStorage.setItem(OFFER_KEY, today);
-    overlay.remove();
-  }
-
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
-  overlay.querySelector("#offerClose").addEventListener("click", close);
-  overlay.querySelector("#offerGo").addEventListener("click", () => { close(); toast("Aktion sichtbar"); });
-}
-
-/* ---------- WELCOME POPUP (New customer) ---------- */
+/* ---------- WELCOME POPUP (nur Hinweis, kein Code anzeigen/setzen) ---------- */
 function showWelcomeAuthPopup() {
   const u = getUser();
-  if (u) return; // logged in -> no popup
+  if (u) return;
+
   const seen = localStorage.getItem(WELCOME_POP_KEY);
   if (seen === "1") return;
 
-  // show only on index.html
   const grid = qs("grid");
   if (!grid) return;
 
@@ -649,45 +731,39 @@ function showWelcomeAuthPopup() {
     <div class="modal" role="dialog" aria-modal="true">
       <h3>Neu hier?</h3>
       <p class="small">
-        Registriere dich und sichere dir den Neukunden-Rabatt.
+        Registriere dich, um deinen Neukundenrabatt zu erhalten.
       </p>
-
       <div class="modalActions">
-        <button class="btn" id="welcomeRegister">Registrieren & Rabatt sichern</button>
-        <button class="btn-secondary" id="welcomeLogin">Oder anmelden (wenn du schon einen Account hast)</button>
+        <button class="btn" id="welcomeRegister">Registrieren</button>
+        <button class="btn-secondary" id="welcomeLogin">Anmelden</button>
         <button class="btn-secondary" id="welcomeGuest">Als Gast fortfahren</button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
 
-  function close(persistSeen = true) {
-    if (persistSeen) localStorage.setItem(WELCOME_POP_KEY, "1");
+  function close() {
+    localStorage.setItem(WELCOME_POP_KEY, "1");
     overlay.remove();
   }
 
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(true); });
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
   overlay.querySelector("#welcomeRegister").addEventListener("click", () => {
-    // Important: Do NOT auto-give discount unless they choose this path
-    setCoupon("WELCOME10");
-    toast("Neukunden-Code aktiviert: WELCOME10");
-    close(true);
+    close();
     location.href = "login.html#register";
   });
-
   overlay.querySelector("#welcomeLogin").addEventListener("click", () => {
-    close(true);
+    close();
     location.href = "login.html#login";
   });
-
   overlay.querySelector("#welcomeGuest").addEventListener("click", () => {
-    close(true);
+    close();
     toast("Als Gast fortgefahren");
   });
 }
 
-/* ---------- COOKIE BANNER ---------- */
+/* ---------- COOKIE BANNER (Ablehnen möglich = nur notwendig) ---------- */
 function getCookieConsent(){ return (localStorage.getItem(COOKIE_CONSENT_KEY) || "").trim(); }
 function setCookieConsent(v){ localStorage.setItem(COOKIE_CONSENT_KEY, v); }
 
@@ -703,16 +779,15 @@ function showCookieBanner() {
         <div>
           <h3 class="cookieTitle">Cookies & Datenschutz</h3>
           <p class="cookieText">
-            Wir nutzen notwendige Speicherfunktionen (Warenkorb, Login-Demo, Checkout-Status).
-            Tracking ist in dieser Demo nicht aktiv.
+            Du kannst Cookies ablehnen. Notwendige Speicherfunktionen (z. B. Warenkorb/Account) bleiben aktiv.
           </p>
           <div class="cookieMini">
-            Mehr Infos: <a href="cookies.html">Cookies</a> • <a href="datenschutz.html">Datenschutz</a> • <a href="agb.html">AGB</a> • <a href="impressum.html">Impressum</a>
+            Mehr Infos: <a href="cookies.html">Cookies</a> • <a href="datenschutz.html">Datenschutz</a>
           </div>
         </div>
         <div class="cookieActions">
-          <button class="btn" id="cookieAcceptAll" type="button">Alle akzeptieren</button>
-          <button class="btn-secondary" id="cookieNecessary" type="button">Nur notwendig</button>
+          <button class="btn" id="cookieAcceptAll" type="button">Akzeptieren</button>
+          <button class="btn-secondary" id="cookieNecessary" type="button">Ablehnen</button>
         </div>
       </div>
     </div>
@@ -729,7 +804,7 @@ function showCookieBanner() {
 
   wrap.querySelector("#cookieNecessary").addEventListener("click", () => {
     setCookieConsent("necessary");
-    toast("Nur notwendige Cookies");
+    toast("Cookies abgelehnt");
     close();
   });
 }
@@ -742,7 +817,7 @@ renderProduct();
 renderCart();
 renderLogin();
 renderAddress();
-showOfferPopup();
 showWelcomeAuthPopup();
 showCookieBanner();
 syncNavAuthState();
+gateCouponUI();
