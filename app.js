@@ -3,7 +3,6 @@
    app.js
 ========================= */
 
-/* ---------- CONFIG ---------- */
 const BRAND = "Heritage Collection";
 
 const CART_KEY = "shop_cart_v1";
@@ -21,10 +20,10 @@ const ADDRESS_KEY_SESSION = "shop_address_session_v1";
 // Cookie consent
 const COOKIE_CONSENT_KEY = "shop_cookie_consent_v1"; // "all" | "necessary"
 
-// Neukunden Popup (nur Frage nach Registrierung, KEIN Rabatt verschenken)
+// Neukunden Popup (nur Frage nach Registrierung, kein Code verraten)
 const WELCOME_POP_KEY = "shop_welcome_seen_v2";
 
-/* ---------- CONTACT (für Footer/Seiten) ---------- */
+// Kontakt
 const CONTACT = {
   name: "Hasan Yildiz",
   phone: "015117224716",
@@ -32,7 +31,6 @@ const CONTACT = {
   location: "90427 Nürnberg"
 };
 
-/* ---------- HELPERS ---------- */
 function qs(id){ return document.getElementById(id); }
 
 function money(amount, currency = "EUR") {
@@ -52,12 +50,11 @@ function setBrand() {
 
   document.title = document.title.replace("DEINE BRAND", BRAND);
 
-  // Inline contact (optional)
   const ci = qs("contactInline");
-  if (ci) ci.textContent = `${CONTACT.email} • ${CONTACT.phone}`;
+  if (ci) ci.textContent = `${CONTACT.email} • ${CONTACT.phone} • ${CONTACT.location}`;
 }
 
-/* ---------- TOAST ---------- */
+/* ---------- Toast ---------- */
 function toast(text) {
   let host = document.querySelector(".toastHost");
   if (!host) {
@@ -72,7 +69,7 @@ function toast(text) {
   setTimeout(() => t.remove(), 950);
 }
 
-/* ---------- USER (persist/session) ---------- */
+/* ---------- USER ---------- */
 function getUser() {
   try {
     const s = sessionStorage.getItem(USER_KEY_SESSION);
@@ -84,23 +81,19 @@ function getUser() {
   } catch {}
   return null;
 }
-
 function clearUser() {
   localStorage.removeItem(USER_KEY_PERSIST);
   sessionStorage.removeItem(USER_KEY_SESSION);
 }
-
 function setUserSession(u) {
   sessionStorage.setItem(USER_KEY_SESSION, JSON.stringify(u));
   localStorage.removeItem(USER_KEY_PERSIST);
 }
-
 function setUserPersist(u) {
   localStorage.setItem(USER_KEY_PERSIST, JSON.stringify(u));
   sessionStorage.removeItem(USER_KEY_SESSION);
 }
 
-/* ---------- USERS DB (Demo lokal) ---------- */
 function getUsersDb() {
   try { return JSON.parse(localStorage.getItem(USERS_DB_KEY) || "[]"); }
   catch { return []; }
@@ -109,7 +102,6 @@ function setUsersDb(db) {
   localStorage.setItem(USERS_DB_KEY, JSON.stringify(db));
 }
 
-/* ---------- NAV VISIBILITY (Login vs Logout) ---------- */
 function syncNavAuthState() {
   const u = getUser();
   const loginLink = qs("loginLink");
@@ -138,8 +130,6 @@ function syncNavAuthState() {
 /* ---------- COUPONS ---------- */
 function getCoupon(){ return (localStorage.getItem(COUPON_KEY) || "").trim(); }
 function setCoupon(code){ localStorage.setItem(COUPON_KEY, (code||"").trim().toUpperCase()); }
-
-/* Nur registrierte/angemeldete Nutzer dürfen Coupons nutzen/sehen */
 function userCanUseCoupons() {
   const u = getUser();
   return !!u && u.mode === "user";
@@ -334,12 +324,9 @@ function setAddressPersist(addr){
   sessionStorage.removeItem(ADDRESS_KEY_SESSION);
 }
 
-/* client-side Validierung (echt prüfen via API später möglich) */
 function validateAddressFields(addr) {
-  // Street needs number at least once (simple check)
   const streetOk = /^[^\d]{2,}\s+\d+[a-zA-Z]?$/.test(addr.street);
 
-  // DE: 5 digits, AT: 4 digits, CH: 4 digits
   let zipOk = true;
   if (addr.country === "DE") zipOk = /^\d{5}$/.test(addr.zip);
   if (addr.country === "AT") zipOk = /^\d{4}$/.test(addr.zip);
@@ -350,12 +337,8 @@ function validateAddressFields(addr) {
   return { ok: streetOk && zipOk && cityOk, streetOk, zipOk, cityOk };
 }
 
-/* Platzhalter für echte Adressprüfung (API nötig) */
-async function addressExistsWithApi(/* addr */) {
-  // Hier später z.B. fetch(...) zu einem Adressdienst.
-  // Ohne API-Key/Backend nicht zuverlässig möglich.
-  return true;
-}
+// Echte Adress-Existenzprüfung braucht eine API (Key/Provider). Platzhalter:
+async function addressExistsWithApi(/* addr */) { return true; }
 
 function renderAddress() {
   const saveBtn = qs("saveAddress");
@@ -420,10 +403,9 @@ function gateCouponUI() {
   if (userCanUseCoupons()) {
     couponBox.style.display = "block";
     const hint = qs("couponHint");
-    if (hint) hint.textContent = "Dein Neukunden-Code wird nach Registrierung automatisch freigeschaltet.";
+    if (hint) hint.textContent = "Neukundenrabatt ist nach Registrierung verfügbar.";
   } else {
     couponBox.style.display = "none";
-    // Coupon intern nicht löschen (optional), aber ohne Login wirkt er nicht
   }
 }
 
@@ -432,6 +414,7 @@ function renderCart() {
   const table = qs("cartTable");
   if (!table) return;
 
+  const wrap = qs("cartWrap");
   const empty = qs("cartEmpty");
   const body = qs("cartBody");
 
@@ -447,7 +430,7 @@ function renderCart() {
 
     if (!cart.length) {
       if (empty) empty.style.display = "block";
-      table.style.display = "none";
+      if (wrap) wrap.style.display = "none";
       if (subEl) subEl.textContent = "—";
       if (discEl) discEl.textContent = "—";
       if (totalEl) totalEl.textContent = "—";
@@ -455,7 +438,7 @@ function renderCart() {
     }
 
     if (empty) empty.style.display = "none";
-    table.style.display = "table";
+    if (wrap) wrap.style.display = "block";
 
     body.innerHTML = cart.map((it, index) => {
       const p = findProduct(it.productId);
@@ -512,9 +495,7 @@ function renderCart() {
 
   gateCouponUI();
 
-  if (couponInput) {
-    couponInput.value = userCanUseCoupons() ? getCoupon() : "";
-  }
+  if (couponInput) couponInput.value = userCanUseCoupons() ? getCoupon() : "";
 
   qs("applyCoupon")?.addEventListener("click", () => {
     if (!userCanUseCoupons()) {
@@ -555,7 +536,7 @@ function renderCart() {
   draw();
 }
 
-/* ---------- LOGIN PAGE (wie vorher, aber: Rabatt erst nach Registrierung) ---------- */
+/* ---------- LOGIN PAGE ---------- */
 function renderLogin() {
   const tabLogin = qs("tabLogin");
   if (!tabLogin) return;
@@ -609,7 +590,6 @@ function renderLogin() {
       if (tabGuest) tabGuest.disabled = false;
       if (logoutBtn) logoutBtn.style.display = "none";
 
-      // Hash-Steuerung
       const h = (location.hash || "").toLowerCase();
       if (h.includes("register")) show("register");
       else if (h.includes("guest")) show("guest");
@@ -627,7 +607,6 @@ function renderLogin() {
   tabRegister?.addEventListener("click", () => show("register"));
   tabGuest?.addEventListener("click", () => show("guest"));
 
-  // Login
   qs("loginBtn")?.addEventListener("click", () => {
     if (getUser()) return;
 
@@ -658,7 +637,6 @@ function renderLogin() {
     gateCouponUI();
   });
 
-  // Register (hier wird der Neukundenrabatt freigeschaltet)
   qs("registerBtn")?.addEventListener("click", () => {
     if (getUser()) return;
 
@@ -679,10 +657,10 @@ function renderLogin() {
 
     askRememberAndStore({ mode:"user", email:e, ts:Date.now() });
 
-    // Neukunden-Code erst JETZT setzen (nach Registrierung)
+    // Neukunden-Code wird erst nach Registrierung gesetzt (nicht vorher angezeigt)
     setCoupon("WELCOME10");
 
-    if (msg) msg.textContent = "Registriert & eingeloggt. Neukundenrabatt freigeschaltet.";
+    if (msg) msg.textContent = "Registriert & eingeloggt. Rabatt ist freigeschaltet.";
     toast("Registriert + Rabatt aktiv");
 
     lockIfLoggedIn();
@@ -690,7 +668,6 @@ function renderLogin() {
     gateCouponUI();
   });
 
-  // Guest
   qs("guestBtn")?.addEventListener("click", () => {
     if (getUser()) return;
     askRememberAndStore({ mode:"guest", ts:Date.now() });
@@ -702,7 +679,6 @@ function renderLogin() {
     gateCouponUI();
   });
 
-  // Logout
   logoutBtn?.addEventListener("click", () => {
     clearUser();
     toast("Abgemeldet");
@@ -714,7 +690,7 @@ function renderLogin() {
   lockIfLoggedIn();
 }
 
-/* ---------- WELCOME POPUP (nur Hinweis, kein Code anzeigen/setzen) ---------- */
+/* ---------- Welcome Popup (nur Frage, kein Rabattcode anzeigen) ---------- */
 function showWelcomeAuthPopup() {
   const u = getUser();
   if (u) return;
@@ -730,9 +706,7 @@ function showWelcomeAuthPopup() {
   overlay.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true">
       <h3>Neu hier?</h3>
-      <p class="small">
-        Registriere dich, um deinen Neukundenrabatt zu erhalten.
-      </p>
+      <p class="small">Registriere dich, um deinen Neukundenrabatt zu erhalten.</p>
       <div class="modalActions">
         <button class="btn" id="welcomeRegister">Registrieren</button>
         <button class="btn-secondary" id="welcomeLogin">Anmelden</button>
@@ -749,21 +723,12 @@ function showWelcomeAuthPopup() {
 
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
-  overlay.querySelector("#welcomeRegister").addEventListener("click", () => {
-    close();
-    location.href = "login.html#register";
-  });
-  overlay.querySelector("#welcomeLogin").addEventListener("click", () => {
-    close();
-    location.href = "login.html#login";
-  });
-  overlay.querySelector("#welcomeGuest").addEventListener("click", () => {
-    close();
-    toast("Als Gast fortgefahren");
-  });
+  overlay.querySelector("#welcomeRegister").addEventListener("click", () => { close(); location.href = "login.html#register"; });
+  overlay.querySelector("#welcomeLogin").addEventListener("click", () => { close(); location.href = "login.html#login"; });
+  overlay.querySelector("#welcomeGuest").addEventListener("click", () => { close(); toast("Als Gast fortgefahren"); });
 }
 
-/* ---------- COOKIE BANNER (Ablehnen möglich = nur notwendig) ---------- */
+/* ---------- Cookie Banner (Ablehnen möglich) ---------- */
 function getCookieConsent(){ return (localStorage.getItem(COOKIE_CONSENT_KEY) || "").trim(); }
 function setCookieConsent(v){ localStorage.setItem(COOKIE_CONSENT_KEY, v); }
 
@@ -778,8 +743,8 @@ function showCookieBanner() {
       <div class="cookieHeader">
         <div>
           <h3 class="cookieTitle">Cookies & Datenschutz</h3>
-          <p class="cookieText">
-            Du kannst Cookies ablehnen. Notwendige Speicherfunktionen (z. B. Warenkorb/Account) bleiben aktiv.
+          <p class="cookieText small">
+            Du kannst Cookies ablehnen. Notwendige Speicherfunktionen (Warenkorb/Account) bleiben aktiv.
           </p>
           <div class="cookieMini">
             Mehr Infos: <a href="cookies.html">Cookies</a> • <a href="datenschutz.html">Datenschutz</a>
